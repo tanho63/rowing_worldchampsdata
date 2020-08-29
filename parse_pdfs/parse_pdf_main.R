@@ -18,8 +18,9 @@ pacman::p_load(tidyverse, glue, lubridate, pdftools, devtools, remotes, rJava, t
 # for parallelizing
 # http://www.business-science.io/code-tools/2016/12/18/multidplyr.html
 # devtools::install_github("hadley/multidplyr")
-library(multidplyr)
-pacman::p_load(parallel)
+# library(multidplyr)
+# pacman::p_load(parallel)
+library(furrr)
 
 #####################
 #### FIND IF WE CAN CALL A RUN TO SHELL BASH FILE FROM R ####
@@ -36,39 +37,45 @@ unlink("scraped_pdfs/2015_world_championships/ROMA12203_C73.pdf")
 #####################
 #### FUNCTIONS ######
 #####################
-source('parse_pdf_functions.R')
+source('parse_pdfs/parse_pdf_functions.R')
 
 # in case you want to do it in parallel
-num_cores <- detectCores()
+# num_cores <- detectCores()
 
 #####################
 #### CREATE DF ######
 #####################
-championship_by_year <- create_df_of_race_pdfs_by_year(num_cores)
+championship_by_year <- create_df_of_race_pdfs_by_year(1)
 
 #####################
 # DO IT IN PARALLEL #
 #####################
 # Cut done time from 60 to 25 minutes, refers to reference above
-cluster <- create_cluster(cores = num_cores)
+# cluster <- multidplyr::new_cluster(n = num_cores)
+# 
+# chip_by_year_partitioned <- 
+#   championship_by_year %>%
+#   group_by(core_group) %>% 
+#   partition(cluster = cluster) 
+# 
+# chip_by_year_partitioned %>% 
+#   map(~load_library_functions_to_clusters(.x))
+# 
+# # Takes roughly 24.23 when done in parallel
+# all_years_parsed <- 
+#   chip_by_year_partitioned %>%
+#   mutate(data = map(year_directory, parse_files_for_year)) %>%
+#   collect() %>% # Special collect() function to recombine partitions
+#   as_tibble() 
 
-chip_by_year_partitioned <- 
-  championship_by_year %>%
-  partition(core_group, cluster = cluster) 
+# Switch to furrr
 
-chip_by_year_partitioned %>% load_library_functions_to_clusters()
-
-# Takes roughly 24.23 when done in parallel
-all_years_parsed <- 
-  chip_by_year_partitioned %>%
-  mutate(data = map(year_directory, parse_files_for_year)) %>%
-  collect() %>% # Special collect() function to recombine partitions
-  as_tibble() 
+plan(multiprocess)
 
 # Takes roughly 57.98 minutes when not done in parallel
-# all_years_parsed <- 
-#     championship_by_year %>%
-#     mutate(data = map(year_directory, parse_files_for_year))
+all_years_parsed <-
+    championship_by_year %>%
+    mutate(data = future_map(year_directory, parse_files_for_year))
 
 #####################
 #### WIDEN DATA #####
@@ -92,8 +99,6 @@ all_years_augmented <-
 ##### SAVE DATA #####
 #####################
 write_csv(all_years_augmented, "rowing_world_championships.csv")
-
-
 
 # for debugging
 # 

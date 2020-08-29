@@ -260,7 +260,7 @@ parse_c73 <- function(c73_file_name){
            split_4_time = str_extract(value, split_time_reg_ex)) %>%
     # save time as number of seconds but as a real number as period format was not supported in 
     # some of the purrr/nesting operations later on
-    mutate_at(vars(matches("time")), ~ ms(., quiet = T) %>% seconds() %>% parse_number()) %>%
+    mutate_at(vars(matches("time")), ~ ms(., quiet = T) %>% seconds() %>% as.character() %>% parse_number()) %>%
     select(-value) 
   
   return(results_parsed)
@@ -285,6 +285,8 @@ separate_birthday_name_cols <- function(data){
 
 parse_files_for_year <- function(directory){
   # find all files in the directory
+  # 
+  browser()
   file_name <- list.files(directory)
   files     <- tibble(file_name)
   # nest each file available for each race_id
@@ -300,7 +302,7 @@ parse_files_for_year <- function(directory){
     # may change this later but it makes it easy to debug and spot NAs if 
     # we don't do it right now
     drop_na(mgps, c73, c51a) %>%
-    nest(-race_id)
+    nest(data = c(-race_id))
   
   files_parsed <-
     files_nested %>%
@@ -404,7 +406,7 @@ create_df_of_race_pdfs_by_year <- function(num_cores){
     tibble(year = 2010:2017) %>%
     mutate(year_directory = paste0("scraped_pdfs/", year, "_world_championships/"),
            approx_num_races = map(year_directory, ~ length(list.files(.x))/3)) %>%
-    unnest() %>%
+    unnest(cols = c(approx_num_races)) %>%
     mutate(rank = row_number(row_number(approx_num_races))) %>%
     arrange(-rank) %>%
     mutate(rank_rev  = row_number(),
@@ -427,10 +429,10 @@ load_library_functions_to_clusters <- function(df_partitioned){
     cluster_library("tabulizer") %>%
     cluster_library("pdftools") %>%
     # Assign values (use this to load functions or data to each core)
-    cluster_assign_value("extract_gps_data",             extract_gps_data) %>%
-    cluster_assign_value("extract_race_information_gps", extract_race_information_gps) %>%
-    cluster_assign_value("parse_c51a",                   parse_c51a) %>%
-    cluster_assign_value("parse_c73",                    parse_c73) %>%
-    cluster_assign_value("parse_files_for_year",         parse_files_for_year) %>%
-    cluster_assign_value("parse_gps",                    parse_gps)
+    cluster_assign(extract_gps_data= extract_gps_data) %>%
+    cluster_assign(extract_race_information_gps=extract_race_information_gps) %>%
+    cluster_assign(parse_c51a=                  parse_c51a) %>%
+    cluster_assign(parse_c73=                   parse_c73) %>%
+    cluster_assign(parse_files_for_year=        parse_files_for_year) %>%
+    cluster_assign(parse_gps=                   parse_gps)
 }
