@@ -302,6 +302,8 @@ parse_files_for_year <- function(directory){
     # if it is missing one of the pdfs we will not parse them
     # may change this later but it makes it easy to debug and spot NAs if 
     # we don't do it right now
+    # mutate(mgps = if(!is.null(.$mgps)){mgps} else {c77}) %>% 
+    # select(-c77) %>% 
     drop_na(mgps, c73, c51a) %>%
     nest(data = c(-race_id))
   
@@ -402,9 +404,9 @@ make_boats_race_the_observation <- function(data){
 
 
 
-create_df_of_race_pdfs_by_year <- function(num_cores){
+create_df_of_race_pdfs_by_year <- function(num_cores,selected_years = 2018:2019){
   championship_by_year <- 
-    tibble(year = 2010:2017) %>%
+    tibble(year = selected_years) %>%
     mutate(year_directory = paste0("scraped_pdfs/", year, "_world_championships/"),
            approx_num_races = map(year_directory, ~ length(list.files(.x))/3)) %>%
     unnest(cols = c(approx_num_races)) %>%

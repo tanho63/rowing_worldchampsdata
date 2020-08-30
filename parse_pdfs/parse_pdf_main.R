@@ -45,7 +45,8 @@ source('parse_pdfs/parse_pdf_functions.R')
 #####################
 #### CREATE DF ######
 #####################
-championship_by_year <- create_df_of_race_pdfs_by_year(1)
+
+championship_by_year <- create_df_of_race_pdfs_by_year(1,2018)
 
 #####################
 # DO IT IN PARALLEL #
@@ -99,7 +100,7 @@ all_years_augmented <-
 #####################
 ##### SAVE DATA #####
 #####################
-write_csv(all_years_augmented, "rowing_world_championships.csv")
+write_csv(all_years_augmented, "rowing_world_championships.csv",append = TRUE)
 
 # for debugging
 # 
