@@ -73,10 +73,11 @@ championship_by_year <- create_df_of_race_pdfs_by_year(1)
 plan(multiprocess)
 
 # Takes roughly 57.98 minutes when not done in parallel
+tictoc::tic()
 all_years_parsed <-
     championship_by_year %>%
-    mutate(data = future_map(year_directory, parse_files_for_year))
-
+    mutate(data = map(year_directory, parse_files_for_year))
+tictoc::toc()
 #####################
 #### WIDEN DATA #####
 #####################

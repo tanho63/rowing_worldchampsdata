@@ -109,13 +109,14 @@ parse_gps <- function(gps_file_name){
   race_info <- extract_race_information_gps(gps_file_name)
   # find which teams are competing and save so we can use it to parse the gps table
   col_names <- race_info %>% pull(col_names) %>% unlist()
-  race_info <- race_info %>% select(race_info_final) %>% unnest()
+  race_info <- race_info %>% select(race_info_final) %>% unnest(c(race_info_final))
   # find speed and strokes at each split distance
   gps_data  <- tibble(gps_data = list(extract_gps_data(gps_file_name, col_names)))
   gps_parsed <- bind_cols(race_info, gps_data)
   gps_parsed <- 
     gps_parsed %>% 
-    unnest() %>%
+    unnest(c(gps_data)) %>%
+    mutate_at(vars(c("lane_pre_2017", "event_num", "distance", "measurement")), as.character) %>% 
     mutate_at(vars(c("lane_pre_2017", "event_num", "distance", "measurement")), parse_number)
   
   return(gps_parsed)
@@ -286,7 +287,7 @@ separate_birthday_name_cols <- function(data){
 parse_files_for_year <- function(directory){
   # find all files in the directory
   # 
-  browser()
+  # browser()
   file_name <- list.files(directory)
   files     <- tibble(file_name)
   # nest each file available for each race_id
